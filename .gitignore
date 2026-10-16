@@ -1,0 +1,39 @@
+# --- Environnement virtuel ---
+venv/
+.venv/
+env/
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+
+# --- Données : CEDAR à télécharger séparément ; les signatures personnelles sont sensibles ---
+data/
+
+# --- Modèles : on ne versionne que le modèle retenu et son graphique ---
+models/*
+!models/best_model_v3.pt
+!models/distances_v3.png
+
+# --- Archives, journaux et fichiers temporaires ---
+*.zip
+*.tar.gz
+*.log
+.gradio/
+flagged/
+
+# --- Éditeurs et système ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Secrets ---
+.env
