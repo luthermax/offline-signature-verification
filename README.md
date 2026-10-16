@@ -4,8 +4,8 @@ Système qui détermine si une signature est **authentique** en la comparant à 
 
 > **Statut : prototype de démonstration.** Les performances mesurées (voir [Résultats](#résultats)) ne permettent pas de sécuriser des opérations réelles (paiements, contrats, accès). Les limites sont détaillées plus bas.
 
-<!-- Ajouter ici une capture d'écran de la démo : un cas accepté et un cas rejeté -->
-<!-- ![Démo](docs/demo.png) -->
+![Cas accepté](docs/demo_accepte.png) 
+![Cas rejeté](docs/demo_rejete.png) 
 
 ---
 
@@ -168,7 +168,7 @@ Les cas attendus se comportent comme prévu sur CEDAR : vraie signature de la m�
 - **Falsifications expertes : environ 27 % d'erreur.** Ce niveau est insuffisant pour un usage sécuritaire. Les travaux publiés rapportent de bien meilleurs scores sur CEDAR, souvent avec des protocoles différents (par exemple plus de signatures par personne).
 - **Peu de signataires** (39 pour l'entraînement) et **une seule base** : la généralisation à d'autres écritures, stylos, supports et contextes n'est pas démontrée. Le modèle n'a pas été testé sur des signatures locales.
 - **Sensibilité à la qualité de l'image.** Le modèle a été entraîné sur des scans propres. Les photos fortement ombrées, floues, avec le bord de la feuille ou le texte de l'autre face visible peuvent dégrader le résultat.
-- **Sensibilité à l'orientation.** Le modèle tolère de petites rotations (environ 5°) : une signature photographiée tournée de 90° sera probablement rejetée, même authentique.
+- **Sensibilité à l'orientation.** Le modèle a été entraîné avec de petites rotations (environ ±5°) : une signature photographiée tournée de 90° sera probablement rejetée, même authentique. Une option de tolérance à la rotation existe (voir [Utilisation](#utilisation)), mais elle n'a **pas été évaluée** et augmente le risque d'accepter une falsification.
 - **Évaluation sur 8 personnes**, donc des chiffres bruités.
 - **Pas de détection de vivacité** : une photocopie ou une image d'une vraie signature serait traitée comme une signature normale.
 
@@ -263,6 +263,8 @@ python src/predict.py signature_a_verifier.png --reference ref1.png ref2.png
 
 Les références sont des signatures **authentiques** de la personne. Plus il y en a, plus la décision est fiable.
 
+Option `--rotation` : `off` (défaut, signatures dans le même sens), `quarter` (essaie 0°, 90°, 180°, 270°) ou `full` (24 angles, pas de 15°). Essayer plusieurs angles aide quand une photo est tournée, mais donne aussi plus de chances à une falsification de ressembler à une référence : à utiliser avec prudence.
+
 ### Démo Gradio
 
 ```bash
@@ -270,7 +272,7 @@ python app/demo.py            # en local
 python app/demo.py --share    # lien public temporaire
 ```
 
-Deux signatures de référence (la seconde est facultative), la signature à vérifier, et un curseur pour le seuil. Plus le seuil est bas, plus le système est strict : il rejette davantage de fausses signatures, mais aussi davantage de vraies.
+Interface avec deux signatures de référence (la seconde est facultative), la signature à vérifier et une carte de résultat (verdict, position de la distance par rapport au seuil, score indicatif). Les réglages avancés donnent accès au seuil et à la tolérance à la rotation. Plus le seuil est bas, plus le système est strict : il rejette davantage de fausses signatures, mais aussi davantage de vraies.
 
 ### API
 
@@ -278,14 +280,16 @@ Deux signatures de référence (la seconde est facultative), la signature à vé
 uvicorn api.main:app --reload
 ```
 
-Documentation interactive : <http://127.0.0.1:8000/docs>
+Documentation interactive : <http://127.0.0.1:8000/docs> (chaque signature se charge dans son propre champ : `candidate`, `reference_1`, et en option `reference_2` et `reference_3`).
 
 ```bash
 curl -X POST http://127.0.0.1:8000/verify \
   -F "candidate=@a_verifier.png" \
-  -F "references=@ref1.png" \
-  -F "references=@ref2.png"
+  -F "reference_1=@ref1.png" \
+  -F "reference_2=@ref2.png"
 ```
+
+Champs facultatifs : `rotation` (`off`, `quarter` ou `full`) et `threshold` (seuil de décision).
 
 Exemple de réponse :
 
@@ -296,7 +300,9 @@ Exemple de réponse :
   "threshold": 0.489,
   "similarity": 83.4,
   "n_references": 2,
-  "distances": [0.158, 0.166]
+  "distances": [0.158, 0.166],
+  "rotation": "off",
+  "angles": [0, 0]
 }
 ```
 
@@ -314,7 +320,7 @@ Exemple de réponse :
 2. **Plus de données** : pré-entraîner sur un jeu plus grand (par exemple GPDS Synthetic), puis affiner sur CEDAR.
 3. **Collecte de signatures locales**, avec consentement, pour tester sur des conditions réelles (stylos, supports, scanners) et réduire l'écart avec les données d'entraînement.
 4. **Robustesse aux photos** : augmentations imitant les prises de vue (ombres, bruit, flou, perspective) lors de l'entraînement.
-5. **Correction automatique de l'orientation** des signatures.
+5. **Orientation** : évaluer sur CEDAR le coût de la tolérance à la rotation et entraîner avec des rotations plus larges pour qu'elle soit fiable.
 6. **Évaluation plus solide** : validation croisée par personne et plus de signataires dans le jeu de test.
 7. **Décision adaptée au risque** : seuils différents selon l'usage (tolérance aux faux rejets ou aux fausses acceptations).
 
@@ -340,4 +346,4 @@ Exemple de réponse :
 
 ## Auteur
 
-<YENUI Luther Maxwell > · Étudiant en intelligence artificielle et big data · <yluthermax@gmail.com>
+< YENUI Luther Maxwell> · Étudiant en intelligence artificielle et big data · <yluthermax@gmail.com>
